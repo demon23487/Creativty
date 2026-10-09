@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Creativity Page — Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <h1>🎨 Creativity Page</h1>
+    <p class="tagline">Log in to save your creations</p>
+
+    <form id="authForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" required />
+      </div>
+
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" required />
+      </div>
+
+      <button type="submit" class="primary">Login / Register</button>
+      <p id="authMessage" class="message"></p>
+    </form>
+
+    <p class="note">
+      If the username does not exist, it will be created automatically.
+    </p>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Simple switch: if on login.html, enable auth mode
+    window.AUTH_PAGE = true;
+  </script>
+</body>
+</html>
