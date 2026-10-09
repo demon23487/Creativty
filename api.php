@@ -1,5 +1,12 @@
 <?php
-// api.php
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'ok' => true,
+        'message' => 'PHP is running'
+    ]);
+    exit;
+}
 header("Content-Type: application/json");
 
 // Use SQLite in the same directory
