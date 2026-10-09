@@ -273,7 +273,9 @@ function initIdea(user) {
         ? "Name ideas:"
         : "Challenge ideas:";
 
-    ideaOutput.textContent = header + "- " + ideas.join("- ");
+    
+ideaOutput.textContent = header + "\n- " + ideas.join("\n- ");
+
   });
 
   copyIdeaBtn.addEventListener("click", () => {
