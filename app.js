@@ -1,234 +1,358 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#6c5ce7">
-  <title>Creativity Page</title>
-  <link rel="stylesheet" href="./style.css">
-</head>
+(() => {
+  "use strict";
 
-<body>
-  <div class="app">
+  const $ = (id) => document.getElementById(id);
 
-    <header>
-      <h1>🎨 Creativity Page</h1>
-      <p class="tagline">
-        A playful space to create stories, ideas, poems, and memes
-      </p>
-      <div id="userInfo" class="user-info"></div>
-      <button id="logoutBtn" class="small-btn" type="button">
-        Logout
-      </button>
-    </header>
+  const KEYS = {
+    user: "creativity_user",
+    creations: "creativity_creations"
+  };
 
-    <nav class="tabs" aria-label="Creative tools">
-      <button type="button" class="tab active" data-tab="story">
-        Story Builder
-      </button>
-      <button type="button" class="tab" data-tab="idea">
-        Idea Jam
-      </button>
-      <button type="button" class="tab" data-tab="poetry">
-        Poetry Maker
-      </button>
-      <button type="button" class="tab" data-tab="meme">
-        Meme Lab
-      </button>
-      <button type="button" class="tab" data-tab="saved">
-        Saved Creations
-      </button>
-    </nav>
+  let storyText = "";
+  let ideasText = "";
+  let poemText = "";
+  let memeText = "";
+  let scenarioText = "";
 
-    <!-- STORY BUILDER -->
-    <section id="story" class="mode-section active">
-      <h2>Story Builder</h2>
-      <p>Answer a few fun prompts and get a short story.</p>
+  function getCreations() {
+    try {
+      return JSON.parse(localStorage.getItem(KEYS.creations) || "[]");
+    } catch {
+      return [];
+    }
+  }
 
-      <div class="form-group">
-        <label for="storyCharacter">Main character:</label>
-        <input type="text" id="storyCharacter"
-          placeholder="e.g. A curious cat">
-      </div>
+  function notify(message) {
+    let box = $("appMessage");
 
-      <div class="form-group">
-        <label for="storySetting">Setting:</label>
-        <input type="text" id="storySetting"
-          placeholder="e.g. Mysuru Palace at night">
-      </div>
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "appMessage";
+      box.style.cssText =
+        "position:fixed;bottom:20px;left:50%;transform:translateX(-50%);" +
+        "background:#282442;color:white;padding:12px 20px;border-radius:10px;" +
+        "z-index:9999;max-width:90%;text-align:center;";
+      document.body.appendChild(box);
+    }
 
-      <div class="form-group">
-        <label for="storyProblem">Problem or goal:</label>
-        <input type="text" id="storyProblem"
-          placeholder="e.g. Find a hidden treasure">
-      </div>
+    box.textContent = message;
+    clearTimeout(box.timer);
+    box.timer = setTimeout(() => box.remove(), 2500);
+  }
 
-      <div class="form-group">
-        <label for="storyVibe">Vibe:</label>
-        <select id="storyVibe">
-          <option value="funny">Funny</option>
-          <option value="adventure">Adventure</option>
-          <option value="mysterious">Mysterious</option>
-          <option value="heartwarming">Heartwarming</option>
-        </select>
-      </div>
+  function setText(id, text) {
+    const element = $(id);
+    if (element) element.textContent = text;
+  }
 
-      <button type="button" id="generateStoryBtn" class="primary">
-        ✨ Create Story
-      </button>
-      <button type="button" id="saveStoryBtn" class="secondary">
-        💾 Save Story
-      </button>
+  function getValue(id, fallback = "") {
+    return $(id)?.value.trim() || fallback;
+  }
 
-      <div class="output-card">
-        <h3>Your Story</h3>
-        <div id="storyOutput" class="output" aria-live="polite">
-          Your story will appear here…
-        </div>
-        <button type="button" id="copyStoryBtn">📋 Copy Story</button>
-      </div>
-    </section>
+  function showOutput(id, text) {
+    const element = $(id);
+    if (!element) return;
 
-    <!-- IDEA JAM -->
-    <section id="idea" class="mode-section">
-      <h2>Idea Jam</h2>
-      <p>Generate creative ideas for projects, events, names, and more.</p>
+    element.textContent = text;
+    element.style.whiteSpace = "pre-wrap";
+  }
 
-      <div class="form-group">
-        <label for="ideaType">What do you need ideas for?</label>
-        <select id="ideaType">
-          <option value="project">Project idea</option>
-          <option value="event">Event / party theme</option>
-          <option value="name">Name (app, brand, character)</option>
-          <option value="challenge">Personal challenge</option>
-        </select>
-      </div>
+  function saveCreation(type, content) {
+    if (!content.trim()) {
+      notify("Create something first!");
+      return;
+    }
 
-      <div class="form-group">
-        <label for="ideaKeyword">Topic or keyword (optional):</label>
-        <input type="text" id="ideaKeyword"
-          placeholder="e.g. space, food, Mysuru, games">
-      </div>
+    const creations = getCreations();
 
-      <button type="button" id="generateIdeaBtn" class="primary">
-        💡 Generate Ideas
-      </button>
-      <button type="button" id="saveIdeaBtn" class="secondary">
-        💾 Save Ideas
-      </button>
+    creations.unshift({
+      id: Date.now(),
+      type,
+      content,
+      date: new Date().toLocaleString()
+    });
 
-      <div class="output-card">
-        <h3>Your Ideas</h3>
-        <div id="ideaOutput" class="output" aria-live="polite">
-          Ideas will appear here…
-        </div>
-        <button type="button" id="copyIdeaBtn">📋 Copy Ideas</button>
-      </div>
-    </section>
+    try {
+      localStorage.setItem(KEYS.creations, JSON.stringify(creations));
+      renderSaved();
+      notify(type + " saved successfully!");
+    } catch {
+      notify("Storage is full. Please delete some saved creations.");
+    }
+  }
 
-    <!-- POETRY MAKER -->
-    <section id="poetry" class="mode-section">
-      <h2>Poetry Maker</h2>
-      <p>Fill in the blanks and create a short poem.</p>
+  async function copyText(text) {
+    if (!text.trim()) {
+      notify("Create something before copying!");
+      return;
+    }
 
-      <div class="form-group">
-        <label for="poemColor">A color:</label>
-        <input type="text" id="poemColor" placeholder="e.g. golden">
-      </div>
+    try {
+      await navigator.clipboard.writeText(text);
+      notify("Copied successfully!");
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = text;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
 
-      <div class="form-group">
-        <label for="poemObject">An object:</label>
-        <input type="text" id="poemObject" placeholder="e.g. old bicycle">
-      </div>
+      const success = document.execCommand("copy");
+      input.remove();
 
-      <div class="form-group">
-        <label for="poemPlace">A place:</label>
-        <input type="text" id="poemPlace" placeholder="e.g. quiet library">
-      </div>
+      notify(success ? "Copied successfully!" : "Copy failed. Select the text manually.");
+    }
+  }
 
-      <div class="form-group">
-        <label for="poemFeeling">A feeling:</label>
-        <input type="text" id="poemFeeling" placeholder="e.g. hopeful">
-      </div>
+  function initTabs() {
+    document.querySelectorAll(".tab[data-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.tab;
 
-      <button type="button" id="generatePoemBtn" class="primary">
-        📜 Create Poem
-      </button>
-      <button type="button" id="savePoemBtn" class="secondary">
-        💾 Save Poem
-      </button>
+        document.querySelectorAll(".tab[data-tab]").forEach((tab) => {
+          tab.classList.toggle("active", tab === button);
+        });
 
-      <div class="output-card">
-        <h3>Your Poem</h3>
-        <div id="poemOutput" class="output" aria-live="polite">
-          Your poem will appear here…
-        </div>
-        <button type="button" id="copyPoemBtn">📋 Copy Poem</button>
-      </div>
-    </section>
+        document.querySelectorAll(".mode-section").forEach((section) => {
+          section.classList.toggle("active", section.id === target);
+        });
 
-    <!-- MEME LAB -->
-    <section id="meme" class="mode-section">
-      <h2>Meme Lab</h2>
-      <p>Get a funny scenario and create your own meme captions.</p>
+        if (target === "saved") renderSaved();
+      });
+    });
+  }
 
-      <button type="button" id="newScenarioBtn" class="primary">
-        🎲 New Scenario
-      </button>
-      <button type="button" id="saveMemeBtn" class="secondary">
-        💾 Save Meme
-      </button>
+  function initStory() {
+    $("generateStoryBtn")?.addEventListener("click", () => {
+      const character = getValue("storyCharacter", "a curious explorer");
+      const setting = getValue("storySetting", "a mysterious forest");
+      const problem = getValue("storyProblem", "discover a hidden secret");
+      const vibe = getValue("storyVibe", "adventure");
 
-      <div class="output-card">
-        <h3>Scenario</h3>
-        <div id="memeScenario" class="output" aria-live="polite">
-          Click "New Scenario" to start…
-        </div>
-      </div>
+      const endings = {
+        funny: "Everything ended in laughter, and the adventure became a hilarious memory.",
+        adventure: "With courage and teamwork, the challenge was overcome and a new adventure began.",
+        mysterious: "A final clue appeared, revealing that the mystery was only the beginning.",
+        heartwarming: "In the end, friendship and kindness proved more powerful than any obstacle."
+      };
 
-      <div class="form-group">
-        <label for="memeCaption1">Caption 1:</label>
-        <input type="text" id="memeCaption1" placeholder="Top text">
-      </div>
+      storyText =
+        `${character} was exploring ${setting} when an unexpected event occurred.\n\n` +
+        `The biggest challenge was to ${problem}. Although the journey was difficult, ` +
+        `${character} stayed determined and searched for a clever solution.\n\n` +
+        `${endings[vibe] || endings.adventure}`;
 
-      <div class="form-group">
-        <label for="memeCaption2">Caption 2:</label>
-        <input type="text" id="memeCaption2" placeholder="Bottom text">
-      </div>
+      showOutput("storyOutput", storyText);
+    });
 
-      <button type="button" id="buildMemeBtn" class="primary">
-        🧠 Build Meme Text
-      </button>
+    $("saveStoryBtn")?.addEventListener("click", () =>
+      saveCreation("Story", storyText)
+    );
 
-      <div class="output-card">
-        <h3>Your Meme</h3>
-        <div id="memeOutput" class="output" aria-live="polite">
-          Your meme text will appear here…
-        </div>
-        <button type="button" id="copyMemeBtn">📋 Copy Meme</button>
-      </div>
-    </section>
+    $("copyStoryBtn")?.addEventListener("click", () =>
+      copyText(storyText)
+    );
+  }
 
-    <!-- SAVED CREATIONS -->
-    <section id="saved" class="mode-section">
-      <h2>Saved Creations</h2>
-      <p>Your saved stories, ideas, poems, and memes.</p>
+  function initIdeas() {
+    $("generateIdeaBtn")?.addEventListener("click", () => {
+      const type = getValue("ideaType", "project");
+      const topic = getValue("ideaKeyword", "creativity");
 
-      <div id="savedList" class="saved-list">
-        <p>Loading your creations…</p>
-      </div>
-    </section>
+      const ideas = {
+        project: [
+          `Build a simple website about ${topic}.`,
+          `Create a quiz game that teaches people about ${topic}.`,
+          `Design a poster explaining useful facts about ${topic}.`,
+          `Make a short video showing creative uses of ${topic}.`,
+          `Develop a small app to solve a problem related to ${topic}.`
+        ],
+        event: [
+          `Organize a ${topic} themed quiz competition.`,
+          `Host a creative workshop about ${topic}.`,
+          `Arrange a team challenge based on ${topic}.`,
+          `Create a fun exhibition featuring ${topic}.`,
+          `Plan a costume or decoration contest inspired by ${topic}.`
+        ],
+        name: [
+          `${topic} Spark`,
+          `Creative ${topic}`,
+          `${topic} Studio`,
+          `BrightIdea ${topic}`,
+          `${topic} World`
+        ],
+        challenge: [
+          `Spend 15 minutes daily learning about ${topic}.`,
+          `Create one new thing connected to ${topic} every day.`,
+          `Teach a friend something useful about ${topic}.`,
+          `Keep a journal of your ideas about ${topic}.`,
+          `Try five different ways to explore ${topic}.`
+        ]
+      };
 
-    <footer>
-      <p>Made with ❤️ for creative minds like you.</p>
-    </footer>
+      ideasText = `Creative ideas for ${topic}:\n\n` +
+        (ideas[type] || ideas.project)
+          .map((idea, index) => `${index + 1}. ${idea}`)
+          .join("\n");
 
-  </div>
+      showOutput("ideaOutput", ideasText);
+    });
 
-  <!-- Set the page mode BEFORE loading JavaScript -->
-  <script>
-    window.AUTH_PAGE = false;
-  </script>
-  <script src="./app.js" defer></script>
-</body>
-</html>
+    $("saveIdeaBtn")?.addEventListener("click", () =>
+      saveCreation("Ideas", ideasText)
+    );
+
+    $("copyIdeaBtn")?.addEventListener("click", () =>
+      copyText(ideasText)
+    );
+  }
+
+  function initPoetry() {
+    $("generatePoemBtn")?.addEventListener("click", () => {
+      const color = getValue("poemColor", "golden");
+      const object = getValue("poemObject", "old bicycle");
+      const place = getValue("poemPlace", "quiet library");
+      const feeling = getValue("poemFeeling", "hopeful");
+
+      poemText =
+        `A ${color} light shines through the day,\n` +
+        `An ${object} waits along the way.\n` +
+        `Inside a ${place}, dreams grow,\n` +
+        `And gentle winds begin to blow.\n\n` +
+        `With a heart so ${feeling} and bright,\n` +
+        `Tomorrow brings another light.`;
+
+      showOutput("poemOutput", poemText);
+    });
+
+    $("savePoemBtn")?.addEventListener("click", () =>
+      saveCreation("Poem", poemText)
+    );
+
+    $("copyPoemBtn")?.addEventListener("click", () =>
+      copyText(poemText)
+    );
+  }
+
+  function initMeme() {
+    const scenarios = [
+      "When you study all night and the exam asks something else.",
+      "When your teacher says the assignment is very easy.",
+      "When the Wi-Fi stops working during your favourite game.",
+      "When you open the fridge for the fifth time.",
+      "When you promise to sleep early but start watching videos.",
+      "When the exam is tomorrow and you open the book today."
+    ];
+
+    $("newScenarioBtn")?.addEventListener("click", () => {
+      scenarioText = scenarios[Math.floor(Math.random() * scenarios.length)];
+      setText("memeScenario", scenarioText);
+    });
+
+    $("buildMemeBtn")?.addEventListener("click", () => {
+      const top = getValue("memeCaption1", "MY EXPECTATIONS");
+      const bottom = getValue("memeCaption2", "REALITY HAS OTHER PLANS");
+
+      memeText = `${top.toUpperCase()}\n\n${scenarioText || "A normal day"}\n\n${bottom.toUpperCase()}`;
+      showOutput("memeOutput", memeText);
+    });
+
+    $("saveMemeBtn")?.addEventListener("click", () =>
+      saveCreation("Meme", memeText)
+    );
+
+    $("copyMemeBtn")?.addEventListener("click", () =>
+      copyText(memeText)
+    );
+  }
+
+  function renderSaved() {
+    const container = $("savedList");
+    if (!container) return;
+
+    container.replaceChildren();
+
+    const creations = getCreations();
+
+    if (!creations.length) {
+      const message = document.createElement("p");
+      message.textContent = "No saved creations yet. Make something first!";
+      container.appendChild(message);
+      return;
+    }
+
+    creations.forEach((creation) => {
+      const card = document.createElement("article");
+      card.className = "saved-card";
+
+      const heading = document.createElement("h3");
+      heading.textContent = creation.type || "Creation";
+
+      const date = document.createElement("small");
+      date.textContent = creation.date || "";
+
+      const content = document.createElement("p");
+      content.textContent = creation.content || "";
+      content.style.whiteSpace = "pre-wrap";
+
+      const copyButton = document.createElement("button");
+      copyButton.type = "button";
+      copyButton.textContent = "Copy";
+      copyButton.addEventListener("click", () => copyText(creation.content || ""));
+
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.textContent = "Delete";
+
+      deleteButton.addEventListener("click", () => {
+        const updated = getCreations().filter(
+          (item) => item.id !== creation.id
+        );
+
+        localStorage.setItem(KEYS.creations, JSON.stringify(updated));
+        renderSaved();
+        notify("Creation deleted.");
+      });
+
+      card.append(heading, date, content, copyButton, deleteButton);
+      container.appendChild(card);
+    });
+  }
+
+  function initLogout() {
+    const logoutButton = $("logoutBtn");
+    if (!logoutButton) return;
+
+    logoutButton.addEventListener("click", () => {
+      localStorage.removeItem(KEYS.user);
+      notify("You have logged out.");
+    });
+  }
+
+  function init() {
+    const user = (() => {
+      try {
+        return JSON.parse(localStorage.getItem(KEYS.user) || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    setText("userInfo", user?.username ? `Welcome, ${user.username}!` : "Welcome, Creator!");
+
+    initTabs();
+    initStory();
+    initIdeas();
+    initPoetry();
+    initMeme();
+    initLogout();
+    renderSaved();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
